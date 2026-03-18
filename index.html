@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Literacy Q&A Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chat-container {
+            max-height: 70vh;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(59, 130, 246, 0.5);
+        }
+        .chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-container::-webkit-scrollbar-thumb {
+            background-color: rgba(59, 130, 246, 0.5);
+            border-radius: 4px;
+        }
+        .chat-bubble {
+            max-width: 75%;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl m-4">
+        <div class="bg-blue-600 text-white p-4 rounded-t-xl">
+            <h1 class="text-xl font-bold">Financial Literacy Q&A Assistant</h1>
+        </div>
+        <div id="chatContainer" class="chat-container p-4 flex flex-col gap-3">
+            <!-- Chat messages will be appended here -->
+        </div>
+        <div class="p-4 border-t">
+            <div class="flex gap-2">
+                <input
+                    id="questionInput"
+                    type="text"
+                    placeholder="Ask about compound interest, SIP, or any finance topic..."
+                    class="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    onkeypress="if(event.key === 'Enter') sendQuestion()"
+                >
+                <button
+                    onclick="sendQuestion()"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                >
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function sendQuestion() {
+            const input = document.getElementById("questionInput");
+            const question = input.value.trim();
+            if (!question) return;
+
+            // Append user question to chat
+            appendMessage(question, "user");
+
+            // Clear input
+            input.value = "";
+            input.focus();
+
+            try {
+                // Send question to backend
+                const response = await fetch("http://localhost:5000/ask", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ question })
+                });
+                const data = await response.json();
+
+                if (data.error) {
+                    appendMessage(data.error, "bot", true);
+                } else {
+                    appendMessage(data.answer, "bot");
+                }
+            } catch (error) {
+                appendMessage("Failed to connect to the server.", "bot", true);
+            }
+
+            // Scroll to bottom
+            const chatContainer = document.getElementById("chatContainer");
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function appendMessage(text, sender, isError = false) {
+            const chatContainer = document.getElementById("chatContainer");
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `chat-bubble p-3 rounded-lg ${
+                sender === "user"
+                    ? "bg-blue-600 text-white ml-auto"
+                    : isError
+                    ? "bg-red-100 text-red-800 mr-auto"
+                    : "bg-gray-200 text-gray-800 mr-auto"
+            }`;
+            messageDiv.innerText = text;
+            chatContainer.appendChild(messageDiv);
+        }
+    </script>
+</body>
+</html>
